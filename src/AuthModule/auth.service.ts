@@ -12,12 +12,18 @@ import {
   VerifyPhoneDto,
   LoginDto,
 } from './dto/auth.dto';
+import { RedisService } from 'src/RedisModule/redis.service';
+import { SmsService } from './sms.service';
+import { EmailService } from './email.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly jwtService: JwtService,
+    private readonly redisService: RedisService,
+    private readonly smsService: SmsService,
+    private readonly emailService: EmailService,
   ) {}
 
   async register(body: RegisterDto) {
@@ -45,6 +51,30 @@ export class AuthService {
         isRegistered: false,
       },
     });
+
+    // Генерируем 6-значный код
+    const verificationCode = Math.floor(
+      100000 + Math.random() * 900000,
+    ).toString();
+
+    // Сохраняем код в Redis на 5 минут
+    if (email) {
+      await this.redisService.set(
+        `email_verification:${email}`,
+        verificationCode,
+        300,
+      );
+      await this.emailService.sendVerificationEmail(email, verificationCode);
+    }
+
+    if (phone) {
+      await this.redisService.set(
+        `phone_verification:${phone}`,
+        verificationCode,
+        300,
+      );
+      await this.smsService.sendVerificationSms(phone, verificationCode);
+    }
 
     return {
       userId: newUser.id,

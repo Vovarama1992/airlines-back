@@ -50,6 +50,39 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  async set(key: string, value: string, ttl?: number): Promise<void> {
+    try {
+      if (ttl) {
+        await this.redisClient.set(key, value, 'EX', ttl);
+      } else {
+        await this.redisClient.set(key, value);
+      }
+      this.logger.log(`Set key ${key} with TTL ${ttl || '∞'}`);
+    } catch (error) {
+      this.logger.error(`Failed to set key ${key}: ${error.message}`);
+    }
+  }
+
+  async get(key: string): Promise<string | null> {
+    try {
+      const value = await this.redisClient.get(key);
+      this.logger.log(`Get key ${key}: ${value}`);
+      return value;
+    } catch (error) {
+      this.logger.error(`Failed to get key ${key}: ${error.message}`);
+      return null;
+    }
+  }
+
+  async del(key: string): Promise<void> {
+    try {
+      await this.redisClient.del(key);
+      this.logger.log(`Deleted key ${key}`);
+    } catch (error) {
+      this.logger.error(`Failed to delete key ${key}: ${error.message}`);
+    }
+  }
+
   async onModuleDestroy() {
     await this.redisClient.quit();
     this.logger.log('Redis connection closed.');
