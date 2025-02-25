@@ -1,0 +1,61 @@
+networks:
+  my_network:
+    driver: bridge
+
+services:
+  database:
+    image: postgres:13
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: hmm_ru 
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - my_network
+
+  redis-service:
+    image: redis:latest
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      - my_network
+
+  app:
+    build: .
+    container_name: nest_app
+    restart: always
+    ports:
+      - "3001:3001"
+    environment:
+      DATABASE_URL_RU: ${DATABASE_URL_RU}
+      DATABASE_URL_OTHER: ${DATABASE_URL_OTHER}
+      DATABASE_URL_PENDING: ${DATABASE_URL_PENDING}
+      JWT_SECRET: ${JWT_SECRET}
+      REDIS_HOST: redis-service   
+      REDIS_PORT: 6379
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      EMAIL_FROM: ${EMAIL_FROM}
+    volumes:
+      - .:/app 
+      - /app/node_modules  
+    depends_on:
+      - database
+      - redis-service  
+    networks:
+      - my_network
+    env_file:
+      - .env
+
+volumes:
+  db-data:
+
