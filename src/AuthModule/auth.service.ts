@@ -11,6 +11,7 @@ import {
   VerifyEmailDto,
   VerifyPhoneDto,
   LoginDto,
+  OAuthUserDto,
 } from './dto/auth.dto';
 import { RedisService } from 'src/RedisModule/redis.service';
 import { SmsService } from './sms.service';
@@ -79,6 +80,77 @@ export class AuthService {
     return {
       userId: newUser.id,
       message: 'User registered, please verify your phone or email',
+    };
+  }
+
+  async oauthLogin(user: OAuthUserDto) {
+    const dbPending = this.prismaService.getDatabase('PENDING');
+
+    let existingUser;
+
+    if (user.googleId) {
+      existingUser = await dbPending.user.findUnique({
+        where: { googleId: user.googleId },
+      });
+    } else if (user.appleId) {
+      existingUser = await dbPending.user.findUnique({
+        where: { appleId: user.appleId },
+      });
+    }
+
+    if (!existingUser) {
+      const region = Math.random() < 0.5 ? 'RU' : 'OTHER';
+      const finalDB = this.prismaService.getDatabase(region);
+      const pendingDB = this.prismaService.getDatabase('PENDING');
+
+      if (user.googleId) {
+        existingUser = await finalDB.user.findUnique({
+          where: { googleId: user.googleId },
+        });
+      } else if (user.appleId) {
+        existingUser = await finalDB.user.findUnique({
+          where: { appleId: user.appleId },
+        });
+      }
+
+      if (!existingUser && user.email) {
+        existingUser = await finalDB.user.findUnique({
+          where: { email: user.email },
+        });
+
+        if (existingUser) {
+          const updateData = user.googleId
+            ? { googleId: user.googleId }
+            : { appleId: user.appleId };
+
+          existingUser = await finalDB.user.update({
+            where: { id: existingUser.id },
+            data: updateData,
+          });
+        }
+      }
+
+      if (!existingUser) {
+        existingUser = await pendingDB.user.create({
+          data: {
+            email: user.email,
+            phone: user.phone || '',
+            firstName: user.firstName || '',
+            lastName: user.lastName || '',
+            googleId: user.googleId || null,
+            appleId: user.appleId || null,
+            accountType: 'CUSTOMER',
+            isRegistered: true,
+          },
+        });
+      }
+    }
+
+    const token = this.jwtService.sign({ id: existingUser.id });
+
+    return {
+      token,
+      message: `Login successful via ${user.googleId ? 'Google' : 'Apple'}`,
     };
   }
 

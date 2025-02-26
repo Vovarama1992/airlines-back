@@ -24,6 +24,8 @@ model User {
   lastName               String?
   nickname               String?
   password               String?
+  googleId               String?     @unique
+  appleId                String?     @unique
   telegram               String?
   accountType            AccountType @default(CUSTOMER)
   numberOfFlightsPerYear Int         @default(0)

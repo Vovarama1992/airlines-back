@@ -1,4 +1,4 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, Get, Req, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import {
@@ -6,12 +6,45 @@ import {
   VerifyEmailDto,
   VerifyPhoneDto,
   LoginDto,
+  OAuthUserDto,
 } from './dto/auth.dto';
+import { AuthGuard } from '@nestjs/passport';
+import { Request } from 'express';
 
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+
+  @ApiOperation({ summary: 'Google OAuth Login' })
+  @ApiResponse({ status: 302, description: 'Redirect to Google OAuth' })
+  @Get('google')
+  @UseGuards(AuthGuard('google'))
+  async googleAuth() {}
+
+  @ApiOperation({ summary: 'Google OAuth Callback' })
+  @ApiResponse({ status: 200, description: 'Returns JWT token' })
+  @Get('google/callback')
+  @UseGuards(AuthGuard('google'))
+  async googleAuthRedirect(@Req() req: Request) {
+    const user = req.user as OAuthUserDto;
+    return this.authService.oauthLogin(user);
+  }
+
+  @ApiOperation({ summary: 'Apple OAuth Login' })
+  @ApiResponse({ status: 302, description: 'Redirect to Apple OAuth' })
+  @Get('apple')
+  @UseGuards(AuthGuard('apple'))
+  async appleAuth() {}
+
+  @ApiOperation({ summary: 'Apple OAuth Callback' })
+  @ApiResponse({ status: 200, description: 'Returns JWT token' })
+  @Get('apple/callback')
+  @UseGuards(AuthGuard('apple'))
+  async appleAuthRedirect(@Req() req: Request) {
+    const user = req.user as OAuthUserDto;
+    return this.authService.oauthLogin(user);
+  }
 
   @ApiOperation({ summary: 'Регистрация пользователя' })
   @ApiResponse({ status: 201, description: 'Пользователь зарегистрирован' })

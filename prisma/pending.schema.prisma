@@ -23,6 +23,8 @@ model User {
   firstName              String?
   lastName               String?
   nickname               String?
+  googleId               String?     @unique
+  appleId                String?     @unique
   password               String?
   telegram               String?
   accountType            AccountType @default(CUSTOMER)

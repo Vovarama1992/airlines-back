@@ -85,3 +85,29 @@ export class LoginDto {
   @IsString()
   password: string;
 }
+
+export class OAuthUserDto {
+  @ApiProperty({
+    example: '12345678901234567890',
+    description: 'Google ID пользователя',
+  })
+  googleId?: string;
+
+  @ApiProperty({
+    example: '001234.abcdefg.hijklmnop',
+    description: 'Apple ID пользователя',
+  })
+  appleId?: string;
+
+  @ApiProperty({ example: 'ivan@example.com' })
+  email: string | null;
+
+  @ApiProperty({ example: 'Иван' })
+  firstName: string;
+
+  @ApiProperty({ example: '+79999999999' })
+  phone: string;
+
+  @ApiProperty({ example: 'Иванов' })
+  lastName: string;
+}
